@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0">
+
+    <bean id="dynamicLoadBalancer" class="org.apache.camel.dlb.DynamicLoadBalancer">
+        <property name="threshold" value="100"/>
+    </bean>
+
+    <camelContext xmlns="http://camel.apache.org/schema/blueprint">
+        <route id="dlb">
+            <from uri="cxf://http://0.0.0.0:9091/service/dlb?dataFormat=MESSAGE"/>
+            <loadBalance ref="dynamicLoadBalancer">
+                <to uri="hazelcast:seda:nodeA"/>
+                <to uri="hazelcast:seda:nodeB"/>
+                <to uri="hazelcast:seda:nodeC"/>
+                <to uri="hazelcast:seda:nodeD"/>
+            </loadBalance>
+        </route>
+    </camelContext>
+
+</blueprint>
