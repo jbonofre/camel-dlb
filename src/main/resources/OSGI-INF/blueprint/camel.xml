@@ -2,19 +2,44 @@
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0">
 
     <bean id="dynamicLoadBalancer" class="org.apache.camel.dlb.DynamicLoadBalancer">
-        <property name="threshold" value="100"/>
+        <!-- <property name="threshold" value="100"/> -->
     </bean>
 
     <camelContext xmlns="http://camel.apache.org/schema/blueprint">
+
         <route id="dlb">
             <from uri="cxf://http://0.0.0.0:9091/service/dlb?dataFormat=MESSAGE"/>
             <loadBalance ref="dynamicLoadBalancer">
-                <to uri="hazelcast:seda:nodeA"/>
-                <to uri="hazelcast:seda:nodeB"/>
-                <to uri="hazelcast:seda:nodeC"/>
-                <to uri="hazelcast:seda:nodeD"/>
+                <to uri="cxf://http://localhost:9091/service/nodeA"/>
+                <to uri="cxf://http://localhost:9091/service/nodeB"/>
+                <to uri="cxf://http://localhost:9091/service/nodeC"/>
             </loadBalance>
         </route>
+
+        <route id="nodeA">
+            <from uri="cxf://http://0.0.0.0:9091/service/nodeA?dataFormat=MESSAGE"/>
+            <setBody>
+                <constant>NODE A</constant>
+            </setBody>
+            <to uri="stream:out"/>
+        </route>
+
+        <route id="nodeB">
+            <from uri="cxf://http://0.0.0.0:9091/service/nodeB?dataFormat=MESSAGE"/>
+            <setBody>
+                <constant>NODE B</constant>
+            </setBody>
+            <to uri="stream:out"/>
+        </route>
+
+        <route id="nodeC">
+            <from uri="cxf://http://0.0.0.0:9091/service/nodeC?dataFormat=MESSAGE"/>
+            <setBody>
+                <constant>NODE C</constant>
+            </setBody>
+            <to uri="stream:out"/>
+        </route>
+
     </camelContext>
 
 </blueprint>
