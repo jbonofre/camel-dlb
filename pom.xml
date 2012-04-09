@@ -6,40 +6,31 @@
     <groupId>org.apache.camel.poc</groupId>
     <artifactId>camel-dlb</artifactId>
     <version>2.9.1-SNAPSHOT</version>
-    <packaging>bundle</packaging>
+    <packaging>pom</packaging>
 
     <properties>
         <camel.version>2.9.1</camel.version>
+        <osgi.version>4.2.0</osgi.version>
     </properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-core</artifactId>
-            <version>${camel.version}</version>
-        </dependency>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.apache.camel</groupId>
+                <artifactId>camel-core</artifactId>
+                <version>${camel.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.osgi</groupId>
+                <artifactId>org.osgi.core</artifactId>
+                <version>${osgi.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
-        <dependency>
-            <groupId>org.osgi</groupId>
-            <artifactId>org.osgi.core</artifactId>
-            <version>4.2.0</version>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <version>2.3.7</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <instructions>
-
-                    </instructions>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+    <modules>
+        <module>rt</module>
+        <module>console</module>
+    </modules>
 
 </project>

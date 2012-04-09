@@ -38,7 +38,9 @@ public class DynamicLoadBalancer extends LoadBalancerSupport {
             throw new IllegalStateException(e);
         }
 
-        // depending of the message rate and threshold, choose the target node pool
+        // construct the processors set and start the processor vm route
+
+        // stop not used processors
 
         callback.done(true);
         return true;
