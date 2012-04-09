@@ -9,30 +9,34 @@
 
         <route id="dlb">
             <from uri="cxf://http://0.0.0.0:9091/service/dlb?dataFormat=MESSAGE"/>
-            <loadBalance ref="dynamicLoadBalancer"/>
+            <loadBalance ref="dynamicLoadBalancer">
+                <to uri="vm:node1"/>
+                <to uri="vm:node2"/>
+                <to uri="vm:node3"/>
+            </loadBalance>
         </route>
 
-        <route id="nodeA" autoStartup="false">
+        <route id="node1" autoStartup="false">
             <from uri="vm:node1"/>
             <from uri="cxf://http://0.0.0.0:9091/service/nodeA?dataFormat=MESSAGE"/>
             <setBody>
-                <constant>NODE A</constant>
+                <constant>NODE 1</constant>
             </setBody>
             <to uri="stream:out"/>
         </route>
 
-        <route id="nodeB" autoStartup="false">
+        <route id="node2" autoStartup="false">
             <from uri="vm:node2"/>
             <setBody>
-                <constant>NODE B</constant>
+                <constant>NODE 2</constant>
             </setBody>
             <to uri="stream:out"/>
         </route>
 
-        <route id="nodeC" autoStartup="false">
+        <route id="node3" autoStartup="false">
             <from uri="vm:node3"/>
             <setBody>
-                <constant>NODE C</constant>
+                <constant>NODE 3</constant>
             </setBody>
             <to uri="stream:out"/>
         </route>

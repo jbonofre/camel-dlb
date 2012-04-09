@@ -35,7 +35,7 @@
                 <extensions>true</extensions>
                 <configuration>
                     <instructions>
-
+                        <Import-Package>*</Import-Package>
                     </instructions>
                 </configuration>
             </plugin>
