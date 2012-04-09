@@ -11,10 +11,16 @@
     <properties>
         <camel.version>2.9.1</camel.version>
         <osgi.version>4.2.0</osgi.version>
+        <javax.servlet.api>2.5</javax.servlet.api>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>javax.servlet</groupId>
+                <artifactId>servlet-api</artifactId>
+                <version>${javax.servlet.api}</version>
+            </dependency>
             <dependency>
                 <groupId>org.apache.camel</groupId>
                 <artifactId>camel-core</artifactId>

@@ -14,4 +14,34 @@
     <artifactId>camel-dlb-console</artifactId>
     <packaging>bundle</packaging>
 
+    <dependencies>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>servlet-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.core</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <configuration>
+                    <instructions>
+                        <Import-Package>
+                            *
+                        </Import-Package>
+                        <Web-ContextPath>dlb-console</Web-ContextPath>
+                        <Webapp-Context>dlb-console</Webapp-Context>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+
 </project>
