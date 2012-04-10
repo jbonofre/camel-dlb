@@ -5,7 +5,7 @@
 
     <feature name="camel-dlb-rt" version="${project.version}" resolver="(obr)">
         <feature version="${camel.version}">camel-blueprint</feature>
-        <feature version="${camel.version}">camel-cxf</feature>
+        <!-- <feature version="${camel.version}">camel-cxf</feature> -->
         <feature version="${camel.version}">camel-stream</feature>
         <bundle>mvn:org.apache.camel.poc.dlb/camel-dlb-rt/${project.version}</bundle>
     </feature>

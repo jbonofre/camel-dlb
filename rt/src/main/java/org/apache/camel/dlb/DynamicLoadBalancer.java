@@ -18,7 +18,7 @@ public class DynamicLoadBalancer extends QueueLoadBalancer {
 
     protected synchronized Processor chooseProcessor(List<Processor> processors, Exchange exchange) {
         Processor choosed = null;
-        
+
         // get the dlb route
         Route dlb = this.getRoute("dlb", null);
         if (dlb == null) {
@@ -34,46 +34,53 @@ public class DynamicLoadBalancer extends QueueLoadBalancer {
         long processorsCount = 0;
         Set<ObjectName> set = null;
         try {
-            set = mBeanServer.queryNames(new ObjectName(DefaultManagementAgent.DEFAULT_DOMAIN + "type=routes,name=\"dlb\",*"), null);
+            set = mBeanServer.queryNames(new ObjectName(DefaultManagementAgent.DEFAULT_DOMAIN + ":type=routes,name=\"dlb\",*"), null);
             Iterator<ObjectName> iterator = set.iterator();
             if (iterator.hasNext()) {
                 ObjectName routeMBean = iterator.next();
                 Long exchangesCompleted = (Long) mBeanServer.getAttribute(routeMBean, "ExchangesCompleted");
                 Date firstExchangeCompletedDate = (Date) mBeanServer.getAttribute(routeMBean, "FirstExchangeCompletedTimestamp");
-                long routePeriod = (System.currentTimeMillis() - firstExchangeCompletedDate.getTime())/60;
-                long currentRate = exchangesCompleted/routePeriod;
-                processorsCount = currentRate/threshold;
+                processorsCount = 1;
+                if (firstExchangeCompletedDate != null) {
+                    long routePeriod = (System.currentTimeMillis() - firstExchangeCompletedDate.getTime()) / 60;
+                    long currentRate = exchangesCompleted / routePeriod;
+                    processorsCount = currentRate / threshold;
+                }
             }
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
 
         // start the processor vm route
-        for (int i = 0; i < processorsCount; i++) {
+        for (int i = 1; i <= processorsCount; i++) {
             // lookup on node{i} route
             Route route = this.getRoute("node" + i, null);
-            // starting node{i} route if required
-            CamelContext routeCamelContext = route.getRouteContext().getCamelContext();
-            try {
-                routeCamelContext.startRoute("node" + i);
-            } catch (Exception e) {
-                e.printStackTrace();
+            if (route != null) {
+                // starting node{i} route if required
+                CamelContext routeCamelContext = route.getRouteContext().getCamelContext();
+                try {
+                    routeCamelContext.startRoute("node" + i);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
-        
+
         // stop the processor vm route outside the count
-        for (long i = processorsCount; i < nodeRoutes.size(); i++) {
+        for (long i = processorsCount + 1; i < nodeRoutes.size(); i++) {
             // lookup on node{i} route
             Route route = this.getRoute("node" + i, null);
             // starting node{i} route if required
-            CamelContext routeCamelContext = route.getRouteContext().getCamelContext();
-            try {
-                routeCamelContext.stopRoute("node" + i);
-            } catch (Exception e) {
-                e.printStackTrace();
+            if (route != null) {
+                CamelContext routeCamelContext = route.getRouteContext().getCamelContext();
+                try {
+                    routeCamelContext.stopRoute("node" + i);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
-        
+
         // TODO add the vm:node{i} in the processors set and use LoadBalancerSupport
         // random pick up of a processor in the rate
         while (true) {
@@ -128,7 +135,7 @@ public class DynamicLoadBalancer extends QueueLoadBalancer {
         }
         return null;
     }
-    
+
     private List<Route> getNodeRoutes() {
         List<Route> routes = new ArrayList<Route>();
         List<CamelContext> camelContexts = this.getCamelContexts();
@@ -160,7 +167,7 @@ public class DynamicLoadBalancer extends QueueLoadBalancer {
         }
         return null;
     }
-    
+
     private Route getRoute(String routeId, String camelContextName) {
         List<Route> routes = this.getRoutes(camelContextName);
         for (Route route : routes) {

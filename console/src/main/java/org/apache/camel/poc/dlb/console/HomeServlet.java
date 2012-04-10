@@ -2,6 +2,7 @@ package org.apache.camel.poc.dlb.console;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.Route;
+import org.apache.camel.ServiceStatus;
 import org.apache.camel.management.DefaultManagementAgent;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -50,11 +51,9 @@ public class HomeServlet extends HttpServlet {
             writer.println("<table width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" id=\"bc_grid\">");
             writer.println("\t\t  <thead>\n" +
                     "\t\t  \t<tr>\n" +
-                    "\t\t  \t  <th align=\"left\">Label</th>\n" +
-                    "\t\t\t  <th>Type</th>\n" +
-                    "\t\t\t  <th>Name</th>\n" +
-                    "\t\t\t  <th>Version</th>\n" +
+                    "\t\t  \t  <th align=\"left\">Name</th>\n" +
                     "\t\t\t  <th>Status</th>\n" +
+                    "\t\t\t  <th>Info</th>\n" +
                     "\t\t\t</tr>\n" +
                     "\t\t  </thead>");
             writer.println("<tbody>");
@@ -67,7 +66,7 @@ public class HomeServlet extends HttpServlet {
             writer.println("<td class=\"td0\"><span>DLB</span></td>");
             Route dlbRoute = this.getRoute("dlb", null);
             if (dlbRoute == null) {
-                writer.println("<td><img src=\"img/icons/stop.gif\" alt=\"Stopped\"/><span>Started</span></td>");
+                writer.println("<td><img src=\"img/icons/stop.gif\" alt=\"Stopped\"/><span>Stopped</span></td>");
             } else {
                 writer.println("<td><img src=\"img/icons/route.gif\" alt=\"Started\"/><span>Started</span></td>");
             }
@@ -76,10 +75,9 @@ public class HomeServlet extends HttpServlet {
             // get the message rate
             CamelContext camelContext = dlbRoute.getRouteContext().getCamelContext();
             MBeanServer mBeanServer = camelContext.getManagementStrategy().getManagementAgent().getMBeanServer();
-            long processorsCount = 0;
             Set<ObjectName> set = null;
             try {
-                set = mBeanServer.queryNames(new ObjectName(DefaultManagementAgent.DEFAULT_DOMAIN + "type=routes,name=\"dlb\",*"), null);
+                set = mBeanServer.queryNames(new ObjectName(DefaultManagementAgent.DEFAULT_DOMAIN + ":type=routes,name=\"dlb\",*"), null);
                 Iterator<ObjectName> iterator = set.iterator();
                 if (iterator.hasNext()) {
                     ObjectName routeMBean = iterator.next();
@@ -107,7 +105,44 @@ public class HomeServlet extends HttpServlet {
             writer.println("<td colspan=\"3\"><span><b>Target Nodes</b></span></td>");
             writer.println("</tr>");
 
-            // TODO populate
+            List<Route> nodeRoutes = this.getNodeRoutes();
+            for (Route nodeRoute : nodeRoutes) {
+                writer.println("<tr>");
+                writer.println("<td class=\"td0\"><span>" + nodeRoute.getId() + "</span></td>");
+                CamelContext nodeCamelContext = nodeRoute.getRouteContext().getCamelContext();
+                ServiceStatus status = nodeRoute.getRouteContext().getRoute().getStatus(nodeCamelContext);
+                if (status == ServiceStatus.Started) {
+                    writer.println("<td><img src=\"img/icons/route.gif\" alt=\"Started\"/><span>Started</span></td>");
+                } else {
+                    writer.println("<td><img src=\"img/icons/stop.gif\" alt=\"Stopped\"/><span>Stopped</span></td>");
+                }
+                MBeanServer nodeMBeanServer = nodeCamelContext.getManagementStrategy().getManagementAgent().getMBeanServer();
+                Set<ObjectName> nodeSet = null;
+                writer.println("<td>");
+                try {
+                    nodeSet = nodeMBeanServer.queryNames(new ObjectName(DefaultManagementAgent.DEFAULT_DOMAIN + ":type=routes,name=\"" + nodeRoute.getId() + "\",*"), null);
+                    Iterator<ObjectName> iterator = set.iterator();
+                    if (iterator.hasNext()) {
+                        ObjectName routeMBean = iterator.next();
+                        Long exchangesCompleted = (Long) nodeMBeanServer.getAttribute(routeMBean, "ExchangesCompleted");
+                        writer.println("<b>Exchanges Completed</b>: " + exchangesCompleted + "<br/>");
+                        Date firstExchangeCompletedDate = (Date) nodeMBeanServer.getAttribute(routeMBean, "FirstExchangeCompletedTimestamp");
+                        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                        if (firstExchangeCompletedDate != null) {
+                            writer.println("<b>First Exchange</b>: " + format.format(firstExchangeCompletedDate) + "<br/>");
+                        }
+                        Date lastExchangeCompletedDate = (Date) nodeMBeanServer.getAttribute(routeMBean, "LastExchangeCompletedTimestamp");
+                        if (lastExchangeCompletedDate != null) {
+                            writer.println("<b>Last Exchange</b>: " + format.format(lastExchangeCompletedDate) + "<br/>");
+                        }
+                    }
+                } catch (Exception e) {
+                    throw new IllegalStateException(e);
+                }
+                writer.println("</td>");
+                writer.println("</tr>");
+            }
+            
             writer.println("</tbody>");
             writer.println("</table>");
             writer.println("</div>");
