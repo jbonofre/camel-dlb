@@ -37,6 +37,7 @@
     <modules>
         <module>rt</module>
         <module>console</module>
+        <module>feature</module>
     </modules>
 
 </project>

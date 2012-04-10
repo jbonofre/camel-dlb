@@ -1,7 +1,13 @@
 package org.apache.camel.poc.dlb.console;
 
+import org.apache.camel.CamelContext;
+import org.apache.camel.Route;
+import org.apache.camel.management.DefaultManagementAgent;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
 
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -10,6 +16,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 public class HomeServlet extends HttpServlet {
 
@@ -36,9 +44,6 @@ public class HomeServlet extends HttpServlet {
 
             writer.println("<div id=\"toolsbar_bc\">");
             writer.println("<div id=\"dc_refresh\" class=\"bc_btn\"><div class=\"bb\"><div><a href=\"home.do\"><img src=\"img/icons/database_refresh.gif\" alt=\"Refresh\" /><span>Refresh</span></a></div></div></div>");
-            writer.println("<div id=\"dc_deploy\" class=\"bc_btn\"><div><div><img src=\"img/icons/package_go.gif\" alt=\"Deploy\" /><span>Deploy</span></div></div></div>");
-            writer.println("<div id=\"dc_run\" class=\"disabled bc_btn\"><div><div><img src=\"img/icons/resultset_next_d.gif\" alt=\"Run\" /><span>Run</span></div></div></div>");
-            writer.println("<div id=\"dc_undeploy\" class=\"disabled bc_btn\"><div><div><img src=\"img/icons/package_d.gif\" alt=\"Undeploy\" /><span>Undeploy</span></div></div></div>");
             writer.println("</div>");
 
             writer.println("<div id=\"body_bc\">");
@@ -53,6 +58,55 @@ public class HomeServlet extends HttpServlet {
                     "\t\t\t</tr>\n" +
                     "\t\t  </thead>");
             writer.println("<tbody>");
+
+            // display DLB route
+            writer.println("<tr>");
+            writer.println("<td colspan=\"3\"><span><b>Load Balancer</b></span></td>");
+            writer.println("</tr>");
+            writer.println("<tr>");
+            writer.println("<td class=\"td0\"><span>DLB</span></td>");
+            Route dlbRoute = this.getRoute("dlb", null);
+            if (dlbRoute == null) {
+                writer.println("<td><img src=\"img/icons/stop.gif\" alt=\"Stopped\"/><span>Started</span></td>");
+            } else {
+                writer.println("<td><img src=\"img/icons/route.gif\" alt=\"Started\"/><span>Started</span></td>");
+            }
+            writer.println("<td>");
+            writer.println("<b>Threshold</b>: 2 msg/sec<br/>");
+            // get the message rate
+            CamelContext camelContext = dlbRoute.getRouteContext().getCamelContext();
+            MBeanServer mBeanServer = camelContext.getManagementStrategy().getManagementAgent().getMBeanServer();
+            long processorsCount = 0;
+            Set<ObjectName> set = null;
+            try {
+                set = mBeanServer.queryNames(new ObjectName(DefaultManagementAgent.DEFAULT_DOMAIN + "type=routes,name=\"dlb\",*"), null);
+                Iterator<ObjectName> iterator = set.iterator();
+                if (iterator.hasNext()) {
+                    ObjectName routeMBean = iterator.next();
+                    Long exchangesCompleted = (Long) mBeanServer.getAttribute(routeMBean, "ExchangesCompleted");
+                    writer.println("<b>Exchanges Completed</b>: " + exchangesCompleted + "<br/>");
+                    Date firstExchangeCompletedDate = (Date) mBeanServer.getAttribute(routeMBean, "FirstExchangeCompletedTimestamp");
+                    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    if (firstExchangeCompletedDate != null) {
+                        writer.println("<b>First Exchange</b>: " + format.format(firstExchangeCompletedDate) + "<br/>");
+                    }
+                    Date lastExchangeCompletedDate = (Date) mBeanServer.getAttribute(routeMBean, "LastExchangeCompletedTimestamp");
+                    if (lastExchangeCompletedDate != null) {
+                        writer.println("<b>Last Exchange</b>: " + format.format(lastExchangeCompletedDate) + "<br/>");
+                    }
+                }
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+            writer.println("</td>");
+
+            writer.println("</tr>");
+            
+            // display target node routes
+            writer.println("<tr>");
+            writer.println("<td colspan=\"3\"><span><b>Target Nodes</b></span></td>");
+            writer.println("</tr>");
+
             // TODO populate
             writer.println("</tbody>");
             writer.println("</table>");
@@ -93,6 +147,78 @@ public class HomeServlet extends HttpServlet {
             throw new ServletException(e);
         }
 
+        
+    }
+
+    private List<CamelContext> getCamelContexts() {
+        List<CamelContext> camelContexts = new ArrayList<CamelContext>();
+        try {
+            ServiceReference[] references = bundleContext.getServiceReferences(CamelContext.class.getName(), null);
+            if (references != null) {
+                for (ServiceReference reference : references) {
+                    if (reference != null) {
+                        CamelContext camelContext = (CamelContext) bundleContext.getService(reference);
+                        if (camelContext != null) {
+                            camelContexts.add(camelContext);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return camelContexts;
+    }
+
+    private CamelContext getCamelContext(String name) {
+        for (CamelContext camelContext : this.getCamelContexts()) {
+            if (camelContext.getName().equals(name)) {
+                return camelContext;
+            }
+        }
+        return null;
+    }
+
+    private List<Route> getNodeRoutes() {
+        List<Route> routes = new ArrayList<Route>();
+        List<CamelContext> camelContexts = this.getCamelContexts();
+        for (CamelContext camelContext : camelContexts) {
+            for (Route route : camelContext.getRoutes()) {
+                if (route.getId().matches("[N-n]ode\\d+")) {
+                    routes.add(route);
+                }
+            }
+        }
+        return routes;
+    }
+
+    private List<Route> getRoutes(String camelContextName) {
+        if (camelContextName != null) {
+            CamelContext context = this.getCamelContext(camelContextName);
+            if (context != null) {
+                return context.getRoutes();
+            }
+        } else {
+            List<Route> routes = new ArrayList<Route>();
+            List<CamelContext> camelContexts = this.getCamelContexts();
+            for (CamelContext camelContext : camelContexts) {
+                for (Route route : camelContext.getRoutes()) {
+                    routes.add(route);
+                }
+            }
+            return routes;
+        }
+        return null;
+    }
+
+    private Route getRoute(String routeId, String camelContextName) {
+        List<Route> routes = this.getRoutes(camelContextName);
+        for (Route route : routes) {
+            if (route.getId().equals(routeId)) {
+                return route;
+            }
+        }
+        return null;
     }
 
 }

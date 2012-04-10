@@ -8,7 +8,7 @@ public class Template {
         buffer.append("<html xmlns=\"http://www.w3.org/1999/xhtml\">");
         buffer.append("<head>");
         buffer.append("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=iso-8859-1\" />");
-        buffer.append("<title>Bundle Conductor</title>");
+        buffer.append("<title>DLB Console</title>");
         buffer.append("<link rel=\"stylesheet\" href=\"css/core.css\" type=\"text/css\" />");
         buffer.append("<script type=\"text/javascript\" src=\"js/jquery.js\"></script>");
         buffer.append("<script type=\"text/javascript\" src=\"js/core.js\"></script>");
@@ -17,7 +17,7 @@ public class Template {
         buffer.append("<div id=\"header_bc\">");
         buffer.append("<div>");
         buffer.append("<div>");
-        buffer.append("<h1>BUNDLE CONDUCTOR</h1>");
+        buffer.append("<h1>DLB CONSOLE</h1>");
         buffer.append("</div>");
         buffer.append("</div>");
         buffer.append("</div>");
