@@ -69,15 +69,21 @@ public class DynamicLoadBalancer extends QueueLoadBalancer {
         // stop the processor vm route outside the count
         for (long i = processorsCount + 1; i < nodeRoutes.size(); i++) {
             // lookup on node{i} route
-            Route route = this.getRoute("node" + i, null);
-            // starting node{i} route if required
+            final Route route = this.getRoute("node" + i, null);
+            // stopping node{i} route
             if (route != null) {
-                CamelContext routeCamelContext = route.getRouteContext().getCamelContext();
-                try {
-                    routeCamelContext.stopRoute("node" + i);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+                final CamelContext routeCamelContext = route.getRouteContext().getCamelContext();
+                Thread stop = new Thread() {
+                    @Override
+                    public void run() {
+                        try {
+                            routeCamelContext.stopRoute(route.getId());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                };
+                stop.start();
             }
         }
 
