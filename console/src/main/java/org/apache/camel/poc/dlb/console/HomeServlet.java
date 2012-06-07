@@ -121,7 +121,7 @@ public class HomeServlet extends HttpServlet {
                 writer.println("<td>");
                 try {
                     nodeSet = nodeMBeanServer.queryNames(new ObjectName(DefaultManagementAgent.DEFAULT_DOMAIN + ":type=routes,name=\"" + nodeRoute.getId() + "\",*"), null);
-                    Iterator<ObjectName> iterator = set.iterator();
+                    Iterator<ObjectName> iterator = nodeSet.iterator();
                     if (iterator.hasNext()) {
                         ObjectName routeMBean = iterator.next();
                         Long exchangesCompleted = (Long) nodeMBeanServer.getAttribute(routeMBean, "ExchangesCompleted");
